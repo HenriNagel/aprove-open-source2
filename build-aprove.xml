@@ -575,7 +575,8 @@
 		<delete dir="${grammars.gen}/Strategy" />
 		<mkdir dir="${grammars.gen}/Strategy" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/Strategy" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/Strategy" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/Strategy.g" />
@@ -587,7 +588,8 @@
 		<delete dir="${grammars.gen}/newTrs" />
 		<mkdir dir="${grammars.gen}/newTrs" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/newTrs" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/newTrs" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/NewTrs.g" />
@@ -599,7 +601,8 @@
 		<delete dir="${grammars.gen}/newPtrs" />
 		<mkdir dir="${grammars.gen}/newPtrs" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/newPtrs" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/newPtrs" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/newPtrs.g" />
@@ -611,7 +614,8 @@
 		<delete dir="${grammars.gen}/ariTrs" />
 		<mkdir dir="${grammars.gen}/ariTrs" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/ariTrs" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/ariTrs" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/ariTrs.g" />
@@ -623,7 +627,8 @@
 		<delete dir="${grammars.gen}/newIDP" />
 		<mkdir dir="${grammars.gen}/newIDP" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/newIDP" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/newIDP" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/NewIDP.g" />
@@ -635,7 +640,8 @@
 		<delete dir="${grammars.gen}/InterprocInvariant" />
 		<mkdir dir="${grammars.gen}/InterprocInvariant" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/InterprocInvariant" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/InterprocInvariant" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/InterprocInvariant.g" />
@@ -647,7 +653,8 @@
 		<delete dir="${grammars.gen}/IntTRS" />
 		<mkdir dir="${grammars.gen}/IntTRS" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/IntTRS" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/IntTRS" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/IntTRS.g" />
@@ -659,7 +666,8 @@
 		<delete dir="${grammars.gen}/T2IntSys" />
 		<mkdir dir="${grammars.gen}/T2IntSys" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/T2IntSys" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/T2IntSys" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/T2IntSys.g" />
@@ -671,7 +679,8 @@
 		<delete dir="${grammars.gen}/SMTLIB" />
 		<mkdir dir="${grammars.gen}/SMTLIB" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/SMTLIB" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/SMTLIB" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/SMTBenchmark.g" />
@@ -683,7 +692,8 @@
 		<delete dir="${grammars.gen}/llvm" />
 		<mkdir dir="${grammars.gen}/llvm" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/llvm" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/llvm" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/LLVM.g" />
@@ -695,7 +705,8 @@
 		<delete dir="${grammars.gen}/IntProg" />
 		<mkdir dir="${grammars.gen}/IntProg" />
 		<java jar="${antlr}" failonerror="true" fork="true">
-			<arg line="-fo ${grammars.gen}/IntProg" />
+			<arg value="-fo" />
+			<arg value="${grammars.gen}/IntProg" />
 			<arg value="-make" />
 			<arg value="-verbose" />
 			<arg value="${grammars.src}/IntProg.g" />
