@@ -56,6 +56,10 @@ public class RawAriTrs {
     private RewriteStrategy strat;
     private Set<ProbabilisticRule> probabilisticRules =  new HashSet<ProbabilisticRule>();
 
+    //confluence
+    private boolean confluence = false;
+    private boolean infeasibility = false;
+    private Set<Condition> infeasibilityQuery = new LinkedHashSet<Condition>();
     
     public void setInputFormat(InputFormat inputFormat) {
         this.inputFormat = inputFormat;
@@ -366,5 +370,29 @@ public class RawAriTrs {
             ConditionalRule condrule = ConditionalRule.create(r, conds);
             this.addConditionalRule(condrule);
         }
+    }
+    
+    public boolean isConfluence() {
+        return this.confluence;
+    }
+    
+    public void setConfluence(boolean confluence) {
+        this.confluence = confluence;
+    }
+    
+    public boolean isInfeasibility() {
+        return this.infeasibility;
+    }
+
+    public void setInfeasibility(boolean infeasibility) {
+        this.infeasibility = infeasibility;
+    }
+    
+    public void setInfeasibilityQuery(List<Condition> queryList) {
+        this.infeasibilityQuery = new LinkedHashSet<Condition>(queryList);
+    }
+
+    public Set<Condition> getInfeasibilityQuery() {
+        return this.infeasibilityQuery;
     }
 }

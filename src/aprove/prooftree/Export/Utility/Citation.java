@@ -81,7 +81,16 @@ public enum Citation {
     VARTANYAN_BA,  // TODO
     IJCAR24, // TODO
     FLOPS24JOURNAL,// TODO
-    EY09
+    EY09,
+    // Confluence
+    KB70,
+    HUE80,
+    NEW42,
+    OHL94A,
+    OHL94B,
+    TOY87,
+    RV80,
+    BN98
     ;
 
     @Override

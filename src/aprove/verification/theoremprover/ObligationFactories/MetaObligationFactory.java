@@ -12,6 +12,7 @@ import aprove.input.Programs.prolog.*;
 import aprove.input.Programs.prolog.structure.*;
 import aprove.input.Programs.t2.*;
 import aprove.prooftree.Obligations.*;
+import aprove.verification.confluence.*;
 import aprove.verification.diophantine.*;
 import aprove.verification.dpframework.CLSProblem.*;
 import aprove.verification.dpframework.DPProblem.*;
@@ -230,6 +231,8 @@ public class MetaObligationFactory implements ObligationFactory {
             return (CProblem)input;
         case PTRS:
             return (PTRSProblem)input;
+        case ConfTRS:
+            return (ConfTRSProblem)input;
         default:
             throw new IllegalStateException("Did not find suitable type!");
         }

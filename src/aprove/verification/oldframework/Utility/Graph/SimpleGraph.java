@@ -2,7 +2,8 @@ package aprove.verification.oldframework.Utility.Graph;
 
 import java.io.*;
 import java.util.*;
-import java.util.Map.Entry;
+import java.util.Map.*;
+import java.util.stream.*;
 
 import org.json.*;
 
@@ -1362,6 +1363,114 @@ public class SimpleGraph<N, E> implements java.io.Serializable, PrettyStringable
      */
     public LinkedHashSet<Cycle<N>> getSCCs(final EdgeFilter<E, N> edgeFilter) {
         return this.getSCCs(true, edgeFilter);
+    }
+    
+    public Set<Set<Node<N>>> getWCCs() {
+        return this.getWCCs(null);
+    }
+
+    /**
+     * Determines all weakly connected components of this graph.
+     * A weakly connected component is a set of nodes that are connected
+     * when edge directions are ignored.
+     *
+     * @return A set containing sets of nodes, where each inner set is one
+     * weakly connected component.
+     */
+    public Set<Set<Node<N>>> getWCCs(final EdgeFilter<E, N> filter) {
+        Set<Set<Node<N>>> wccs = new LinkedHashSet<>();
+        Set<Node<N>> visited = new HashSet<>();
+
+        for (Node<N> node : this.getNodes()) {
+            if (!visited.contains(node)) {
+                // Found the start of a new component
+                Set<Node<N>> currentComponent = new LinkedHashSet<>();
+                Queue<Node<N>> queue = new LinkedList<>(); // using bfs
+
+                queue.add(node);
+                visited.add(node);
+
+                while (!queue.isEmpty()) {
+                    Node<N> currentNode = queue.poll();
+                    currentComponent.add(currentNode);
+                    // need to check both directions
+                    for (Node<N> neighbor : this.getOut(currentNode)) {
+                        if (!visited.contains(neighbor)) {
+                            visited.add(neighbor);
+                            queue.add(neighbor);
+                        }
+                    }
+                    for (Node<N> neighbor : this.getIn(currentNode)) {
+                        if (!visited.contains(neighbor)) {
+                            visited.add(neighbor);
+                            queue.add(neighbor);
+                        }
+                    }
+                }
+                wccs.add(currentComponent);
+            }
+        }
+        return wccs;
+    }
+    
+    
+    /**
+     * Creates the condensation graph of this graph, where each node represents a
+     * Strongly Connected Component (SCC). The content of each new node is an
+     * immutable set of the original node contents (type N).
+     *
+     * @param includeSingletons If true, single nodes not part of a cycle are
+     * treated as their own SCC. If false, they are ignored.
+     * @return A new, labelless SimpleGraph where nodes contain immutable sets of the original node contents.
+     */
+    public SimpleGraph<ImmutableLinkedHashSet<N>, Void> getCondensationGraph(boolean includeSingletons) {
+        // 1. Find all Strongly Connected Components (as sets of Node<N>).
+        final var sccs = this.getSCCs(!includeSingletons);
+
+        // 2. Create a reverse map to quickly find the SCC (as a Set<N>) that a Node<N> belongs to.
+        final Map<Node<N>, ImmutableLinkedHashSet<N>> nodeToSccMap = new HashMap<>();
+        for (final Set<Node<N>> sccAsNodes : sccs) {
+            // For each SCC, extract the contents (N) into a new set.
+            final LinkedHashSet<N> sccContents = sccAsNodes.stream()
+                    .map(Node::getObject)
+                    .collect(Collectors.toCollection(LinkedHashSet::new)); // Use LinkedHashSet to preserve order
+
+            // Create a single, safe, immutable representation for this SCC's contents.
+            final ImmutableLinkedHashSet<N> immutableScc = ImmutableCreator.create(sccContents);
+
+            // Map all original nodes in this SCC to this new immutable representation.
+            for (final Node<N> originalNode : sccAsNodes) {
+                nodeToSccMap.put(originalNode, immutableScc);
+            }
+        }
+
+        // 3. Create the new Node objects for the condensation graph.
+        final var sccToNewNodeMap = nodeToSccMap.values().stream()
+                .distinct()
+                .collect(Collectors.toMap(
+                        scc -> scc,           // Key: the ImmutableLinkedHashSet<N>
+                        scc -> new Node<>(scc)  // Value: the new Node object wrapping the set
+                ));
+
+        // 4. Instantiate the new graph and add its nodes.
+        final var condensationGraph = new SimpleGraph<ImmutableLinkedHashSet<N>, Void>();
+        for (final var newNode : sccToNewNodeMap.values()) {
+            condensationGraph.addNode(newNode);
+        }
+
+        // 5. Iterate through all original edges to create the new, labelless edges.
+        for (final var originalEdge : this.getEdges()) {
+            var fromScc = nodeToSccMap.get(originalEdge.getStartNode());
+            var toScc = nodeToSccMap.get(originalEdge.getEndNode());
+
+            // An edge exists in the condensation graph if it connects two different SCCs.
+            if (fromScc != null && toScc != null && !fromScc.equals(toScc)) {
+                var newFromNode = sccToNewNodeMap.get(fromScc);
+                var newToNode = sccToNewNodeMap.get(toScc);
+                condensationGraph.addEdge(newFromNode, newToNode);
+            }
+        }
+        return condensationGraph;
     }
 
     /**

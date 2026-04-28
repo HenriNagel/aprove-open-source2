@@ -72,6 +72,7 @@ decl[RawAriTrs rawtrs]
     | GOAL goaldecl[rawtrs]
     | RULE condRule[rawtrs, false]
     | PRULE condPRule[rawtrs, false]
+    | INFEASIBLE infeasibleQuery[rawtrs]
     | COMMENT
 ;
 
@@ -124,6 +125,8 @@ goaldecl [RawAriTrs rawtrs]
     | SAST { rawtrs.setSast(true); }
     | TERMINATION { rawtrs.setTermination(true); }
     | COMPLEXITY { rawtrs.setComplexity(true); }
+    | CONFLUENCE { rawtrs.setConfluence(true); }
+    | INFEASIBILITY { rawtrs.setInfeasibility(true); }
 ;
 
 strategydecl [RawAriTrs rawtrs]
@@ -218,6 +221,15 @@ termlist[RawAriTrs rawtrs] returns [ArrayList<TRSTerm> terms]
     : ( t=term[rawtrs] { terms.add(t); } )*
 ;
 
+infeasibleQuery[RawAriTrs rawtrs]
+	@init {
+		ArrayList<Condition> queryConds = new ArrayList<Condition>();
+	}
+	: ( '(' condition[rawtrs, queryConds] ')')+ {
+		rawtrs.setInfeasibilityQuery(queryConds);
+	}
+;
+
 condlist[RawAriTrs rawtrs, ArrayList<Condition> conds]
 	: ('(' condition[rawtrs, conds] ')' )*
 ;
@@ -264,7 +276,8 @@ integer returns [int i]
 keyword returns [String kw]
     : tok=(FORMAT | PTRS | FUN | REPLACEMENTS | THEORY | PROB | COST | PRULE | RULE| COMPLEXITY 
     		| AST | PAST | SAST | TERMINATION | GOAL | INNERMOST | OUTERMOST | NOT | RULES 
-    		| STRATEGY | VAR | STARTTERM | ALL | BASIC | EQUAL | PARALLELINNERMOST )
+    		| STRATEGY | VAR | STARTTERM | ALL | BASIC | EQUAL | PARALLELINNERMOST | CONFLUENCE 
+    		| INFEASIBILITY | INFEASIBLE)
     { kw = tok.getText(); }
 ;
 
@@ -314,6 +327,9 @@ ALL                     : 'ALL';
 BASIC                   : 'BASIC';
 EQUAL                   : '=';
 PARALLELINNERMOST 		: 'PARALLELINNERMOST';
+CONFLUENCE				: 'CONFLUENCE';
+INFEASIBILITY			: 'INFEASIBILITY';
+INFEASIBLE				: 'infeasible?';
 
 // Lexer Rules
 SIMPLE_SYMBOL

@@ -1851,4 +1851,14 @@ declare ADP_Cpx_ProbabilityRemovalProcessor = aprove.verification.probabilistic.
 declare ADP_Cpx_RuleOverlapInstProcessor = aprove.verification.probabilistic.Complexity.ADPProblem.Processors.ADP_Cpx_RuleOverlapInstProcessor
 declare ADP_Cpx_DependencyGraphSplitProcessor = aprove.verification.probabilistic.Complexity.ADPProblem.Processors.ADP_Cpx_DependencyGraphSplitProcessor
 
+#Confluence Processors
+declare ConfOrthogonalProcessor = aprove.verification.confluence.ConfOrthogonalProcessor
+declare ConfNewmanProcessor = aprove.verification.confluence.ConfNewmanProcessor
+declare LocalConfluenceProcessor = aprove.verification.confluence.LocalConfluenceProcessor
+declare LimitedNotWCRProcessor = aprove.verification.confluence.LimitedNotWCRProcessor
+declare DisjointUnionProcessor = aprove.verification.confluence.DisjointUnionProcessor
+declare ModularConstructorSharingProcessor = aprove.verification.confluence.ModularConstructorSharingProcessor
+declare StrongConfluenceProcessor = aprove.verification.confluence.StrongConfluenceProcessor
+declare NonConfluenceProcessor = aprove.verification.confluence.NonConfluenceProcessor
+declare ModularComposableTRSProcessor = aprove.verification.confluence.ModularComposableTRSProcessor
 

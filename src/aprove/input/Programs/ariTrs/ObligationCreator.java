@@ -8,6 +8,7 @@ import aprove.prooftree.Obligations.*;
 import aprove.verification.complexity.CpxGTrsProblem.*;
 import aprove.verification.complexity.CpxRelTrsProblem.*;
 import aprove.verification.complexity.CpxTrsProblem.*;
+import aprove.verification.confluence.*;
 import aprove.verification.dpframework.BasicStructures.*;
 import aprove.verification.dpframework.TRSProblem.*;
 import aprove.verification.oldframework.BasicStructures.*;
@@ -43,7 +44,9 @@ public class ObligationCreator {
     private final static int bitProbabilistic = 1 << 11;
     private final static int bitTermination = 1 << 12;
     private final static int bitAST = 1 << 13;
-    private final static int bitSAST = 1 << 14;
+    private final static int bitSAST = 1 << 14;    
+    private final static int bitConfluence = 1 << 15;
+    private final static int bitInfeasibility = 1 << 16;
 
     private static boolean notEmpty(final Collection<?> c) {
         return c != null && !c.isEmpty();
@@ -81,6 +84,10 @@ public class ObligationCreator {
     private boolean sast;
     private boolean basic;
     private Set<ProbabilisticRule> probabilisticRules;
+    
+    private boolean confluence;
+    private boolean infeasibility;
+    private Set<Condition> infeasibilityQuery;
 
     public ObligationCreator(final RawAriTrs rawptrs) {
         this.obligationErrors = new LinkedList<ParseError>();
@@ -179,7 +186,9 @@ public class ObligationCreator {
                 | (this.innermost ? ObligationCreator.bitInnermost : 0)
                 | (this.parallelInnermost ? ObligationCreator.bitParallelInnermost : 0)
                 | (this.outermost ? ObligationCreator.bitOutermost : 0)
-                | (this.probabilistic ? ObligationCreator.bitProbabilistic : 0);
+                | (this.probabilistic ? ObligationCreator.bitProbabilistic : 0)
+                | (this.confluence ? ObligationCreator.bitConfluence : 0)
+                | (this.infeasibility ? ObligationCreator.bitInfeasibility : 0);
 
         final String problemCombination =
                         (generalizedNotEmpty ? "Generalized Rules, " : "")
@@ -196,7 +205,9 @@ public class ObligationCreator {
                             + (this.probabilistic ? "Probabilistic, " : "")
                             + (this.termination ? "Termination, " : "")
                             + (this.ast ? "AST, " : "")
-                            + (this.sast ? "SAST, " : "");
+                            + (this.sast ? "SAST, " : "")
+                            + (this.confluence ? "Confluence Analysis, " : "")
+                            + (this.infeasibility ? "Infeasibility Quenstion, " : "");
         
         final RewriteStrategy strat;
         if(this.innermost) {
@@ -388,6 +399,10 @@ public class ObligationCreator {
                     this.innermost ? RewriteStrategy.INNERMOST
                         : (this.parallelInnermost ? RewriteStrategy.PARALLEL_INNERMOST : RewriteStrategy.FULL));
     
+            case(ObligationCreator.bitConfluence):
+                this.language = Language.ConfTRS;
+                return ConfTRSProblem.create(ImmutableCreator.create(this.simpleRules));
+                
             default: {
                 final ParseError pe = new ParseError();
                 if(problemCombination.length() == 0) {
@@ -430,6 +445,9 @@ public class ObligationCreator {
         this.probabilisticRules = rawtrs.getProbabilisticRules();
         this.basic = rawtrs.isBasic();
         this.probabilistic = rawtrs.getInputFormat() == InputFormat.PTRS;
+        this.confluence = rawtrs.isConfluence();
+        this.infeasibility = rawtrs.isInfeasibility();
+        this.infeasibilityQuery = rawtrs.getInfeasibilityQuery();
     }
 
     private QTRSProblem getQTRS(Set<TRSFunctionApplication> qFunctionApplications) {

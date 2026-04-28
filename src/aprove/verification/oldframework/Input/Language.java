@@ -54,7 +54,8 @@ public enum Language {
     TRS,
     TYPETERM,
     PTRS,
-    CpxPTRS(HandlingMode.RuntimeComplexity);
+    CpxPTRS(HandlingMode.RuntimeComplexity), 
+    ConfTRS;
 
     private final HandlingMode defaultMode;
     private final EnumSet<HandlingMode> modes;

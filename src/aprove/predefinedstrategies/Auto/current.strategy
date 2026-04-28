@@ -2113,3 +2113,54 @@ cpx_adp_defaults = First(
 				        ADP_Cpx_ProbabilityRemovalProcessor : RunDefaultStrategyForObligation
 			          )
 			          
+
+# ============================================================ #
+# ====================== Confluence ========================== #
+# ============================================================ #
+
+critical_pair_analysis = LocalConfluenceProcessor
+
+newmanlemma_solve = Solve(
+				ConfNewmanProcessor : Any(
+						qtrs,
+            critical_pair_analysis
+					)
+				)
+				
+conf_atomic_trs = First(
+				LimitedNotWCRProcessor,
+				newmanlemma_solve,
+      			NonConfluenceProcessor
+			)
+
+conf_trs_comp = First(
+      ConfOrthogonalProcessor,
+      StrongConfluenceProcessor,
+      conf_atomic_trs
+		)
+
+conf_trs_mop = First(
+			ConfOrthogonalProcessor,
+			StrongConfluenceProcessor,
+      ModularComposableTRSProcessor : conf_trs_comp,
+			conf_atomic_trs
+			)
+
+conf_trs_toyama = First(
+			ConfOrthogonalProcessor,
+			StrongConfluenceProcessor,
+			ModularConstructorSharingProcessor : conf_trs_mop,
+      ModularComposableTRSProcessor : conf_trs_comp,
+			conf_atomic_trs
+			)
+
+
+conf_trs = First(
+			ConfOrthogonalProcessor,
+			StrongConfluenceProcessor,
+			DisjointUnionProcessor : conf_trs_toyama,
+			ModularConstructorSharingProcessor : conf_trs_mop,
+      ModularComposableTRSProcessor : conf_trs_comp,
+      conf_atomic_trs
+		)
+			          
