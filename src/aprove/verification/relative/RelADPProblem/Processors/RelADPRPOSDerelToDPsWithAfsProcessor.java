@@ -42,28 +42,28 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
 
     @Override
     protected Result processRelADPProblem(RelADPProblem origreladpp, Abortion aborter) throws AbortionException {
-        
+
         RPOSFactory.Arguments args = new RPOSFactory.Arguments();
-        
+
         args.afsType = AFSType.FULLAFS;
         args.quasi = true;
         MINISATEngine.Arguments argsMini = new MINISATEngine.Arguments();
         argsMini.version = 2;
         argsMini.simp = false;
         args.engine = new MINISATEngine(argsMini);
-        
+
         SolverFactory factory = new RPOSFactory(args);
-        
+
         Set<Rule> depPairs = new HashSet<Rule>();
-        for (Rule adp: origreladpp.getPAbs()) {
+        for (Rule adp : origreladpp.getPAbs()) {
             TRSFunctionApplication lhs = adp.getLeft();
             lhs = lhs.renameAtMap(Position.EPSILON, origreladpp.getAnnotator());
 
-            for (TRSFunctionApplication subterm: adp.getRight().subAnnoTerms(origreladpp.getDeannotator())) {
+            for (TRSFunctionApplication subterm : adp.getRight().subAnnoTerms(origreladpp.getDeannotator())) {
                 depPairs.add(Rule.create(lhs, subterm));
             }
         }
-        
+
         Set<Rule> R = ImmutableCreator.create(getKindaUsableRules(origreladpp, depPairs));
 
         final QActiveSolver solver = factory.getQActiveSolver();
@@ -73,7 +73,7 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
         }
         aborter.checkAbortion();
         final AfsOrder solvingOrder = (AfsOrder) solver.solveQActive(depPairs, heuristicActive, false, false, aborter);
-        
+
         if (solvingOrder != null) {
             /* find weak monotonic arguments */
             Set<FunctionSymbol> signature = new HashSet<>(origreladpp.getSignature());
@@ -88,12 +88,17 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
                 removedPositions.add(sym, positionSet);
             }
 
-            Pair<Pair<Set<Rule>, Set<Rule>>, Map<FunctionSymbol, FunctionSymbol>> pair = this.getResultingRules(depPairs, origreladpp.getQ().getR(), removedPositions, signature);
+            Pair<Pair<Set<Rule>, Set<Rule>>, Map<FunctionSymbol, FunctionSymbol>> pair = null;
+            try {
+                pair = this.getResultingRules(depPairs, origreladpp.getQ().getR(), removedPositions, signature);
+            } catch (IllegalArgumentFilterException e) {
+                return ResultFactory.unsuccessful();
+            }
 
             QTRSProblem rWithQ = QTRSProblem.create(ImmutableCreator.create(pair.x.y));
-                            
+
             QDPProblem qdpp = QDPProblem.create(pair.x.x, rWithQ, false);
-            
+
             RelADPCleverAfsProof RPPproof = new RelADPCleverAfsProof(solvingOrder,
                 origreladpp,
                 removedPositions);
@@ -102,12 +107,12 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
         }
         return ResultFactory.unsuccessful();
     }
-    
-    private Set<Rule> getKindaUsableRules(RelADPProblem pqdp, Set<Rule> depPairs){
-     // Add all usable rules from the DPs...
+
+    private Set<Rule> getKindaUsableRules(RelADPProblem pqdp, Set<Rule> depPairs) {
+        // Add all usable rules from the DPs...
         Set<Rule> Rhelp = pqdp.getQ().getQUsableRulesCalculator().getUsableRules(depPairs);
         // ... And add all usable rules from duplicating rules
-        
+
         Graph<Rule, ?> g;
         int n = pqdp.getQ().getR().size();
         Set<Node<Rule>> nodes = new LinkedHashSet<Node<Rule>>(n);
@@ -122,10 +127,10 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
 
         // first do crude approximation on root symbols
         // (only check nodes in sccs in more detail!)
-        for (int i = 0; i<n; i++) {
+        for (int i = 0; i < n; i++) {
             Node<Rule> fromDP = nodeArr[i];
             Rule fromDPRule = fromDP.getObject();
-            for (int j = i+1; j<n; j++) {
+            for (int j = i + 1; j < n; j++) {
                 Node<Rule> toDP = nodeArr[j];
                 Rule toDPRule = toDP.getObject();
                 // standard direction
@@ -143,23 +148,23 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
             }
         }
         Set<Node<Rule>> duplicatingRules = new HashSet();
-        for(Rule rule : pqdp.getQ().getR()) {
-            if(rule.isDuplicating())
+        for (Rule rule : pqdp.getQ().getR()) {
+            if (rule.isDuplicating())
                 duplicatingRules.add(g.getNodeFromObject(rule));
         }
-        for(Node<Rule> dupnode : g.determineReachableNodes(duplicatingRules)) {
+        for (Node<Rule> dupnode : g.determineReachableNodes(duplicatingRules)) {
             Rhelp.add(dupnode.getObject());
         }
         return Rhelp;
     }
-    
+
     private boolean calculateFastConnection(Rule from, Rule to) {
         Set<TRSTerm> tSet = from.getRight().getSubTerms();
-        for(TRSTerm t : tSet) {
-            if(t instanceof TRSFunctionApplication tfun) {
+        for (TRSTerm t : tSet) {
+            if (t instanceof TRSFunctionApplication tfun) {
                 final FunctionSymbol f = tfun.getRootSymbol();
                 final FunctionSymbol g = to.getRootSymbol();
-                if(f.equals(g))
+                if (f.equals(g))
                     return true;
             }
         }
@@ -179,8 +184,9 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
         final Set<Rule> DPs,
         final Set<Rule> rulesRel,
         final CollectionMap<FunctionSymbol, Integer> removedPositions,
-        final Collection<FunctionSymbol> takenSymbols) {
-        
+        final Collection<FunctionSymbol> takenSymbols)
+        throws IllegalArgumentFilterException {
+
         final Set<Rule> newRules = new LinkedHashSet<>(DPs.size());
 
         // helper for name generation
@@ -214,10 +220,13 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
             } else {
                 newRhs = rhs;
             }
+            if (!Rule.checkProperLandR(newLhs, newRhs)) {
+                throw new IllegalArgumentFilterException();
+            }
             final Rule newRule = Rule.create(newLhs, newRhs);
             newRules.add(newRule);
         }
-        
+
         final Set<Rule> newRules2 = new LinkedHashSet<>(DPs.size());
 
         for (final Rule rule : rulesRel) {
@@ -231,6 +240,9 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
             } else {
                 newRhs = rhs;
             }
+            if (!Rule.checkProperLandR(newLhs, newRhs)) {
+                throw new IllegalArgumentFilterException();
+            }
             final Rule newRule = Rule.create(newLhs, newRhs);
             newRules2.add(newRule);
         }
@@ -238,7 +250,11 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
         return new Pair<>(new Pair<>(newRules, newRules2), names);
     }
 
- // ================================================================================
+    public class IllegalArgumentFilterException extends RuntimeException {
+
+    }
+
+    // ================================================================================
     // Proof
     // ================================================================================
 
@@ -250,8 +266,8 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
 
         RelADPCleverAfsProof(
             final ExportableOrder<TRSTerm> order,
-            final RelADPProblem origreladpp, CollectionMap<FunctionSymbol, Integer> removedPositions
-        ) {
+            final RelADPProblem origreladpp,
+            CollectionMap<FunctionSymbol, Integer> removedPositions) {
             this.order = order;
             this.origreladpp = origreladpp;
             this.filtering = removedPositions;
@@ -264,7 +280,7 @@ public class RelADPRPOSDerelToDPsWithAfsProcessor extends RelADPProblemProcessor
             result.append("We use the first derelatifying processor " + o.cite(Citation.IJCAR24) + ".");
             result.append(o.linebreak());
             result.append("There are no annotations in relative ADPs, so the relative ADP problem can be transformed into a non-relative DP problem.");
-            
+
             result.append(o.paragraph());
             result.append("Furthermore, We use an argument filter " + o.cite(Citation.LPAR04) + ".");
             result.append(o.linebreak());
