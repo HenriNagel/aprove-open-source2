@@ -47,12 +47,10 @@ COPY LICENSE aprove
 
 WORKDIR /input
 
-# put lib under /usr/bin/lib so ../lib/solver.sh exists
 COPY lib /usr/bin/lib
 COPY solver             /usr/bin/solver
 COPY handlers/ /usr/bin/handlers/
-RUN chmod +x /usr/bin/solver \
- && find /usr/bin/handlers -type f -name '*.sh' -exec chmod +x {} +
+RUN chmod +x /usr/bin/solver
 
 # help the dispatcher if it honors SOLVER_ROOT
 ENV SOLVER_ROOT="/usr/bin"
