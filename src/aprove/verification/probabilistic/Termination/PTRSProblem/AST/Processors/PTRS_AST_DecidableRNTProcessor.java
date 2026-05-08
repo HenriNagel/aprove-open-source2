@@ -25,14 +25,14 @@ import aprove.verification.probabilistic.BasicStructures.*;
 import aprove.verification.probabilistic.Termination.PTRSProblem.*;
 
 /**
- * Processor that decides AST for GNT (ground, non-overlapping, tail-recursive) PTRS
+ * Processor that decides AST for RNT (right-ground, non-overlapping, tail-recursive) PTRS
  * by using the moment matrix method known from procedures to decide consistency in
  * stochastic context-free grammars.
  *
  * @author Arion Scheid
  * @version $Id$
  */
-public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
+public class PTRS_AST_DecidableRNTProcessor extends PTRS_AST_ProblemProcessor {
 
 
     // ================================================================================
@@ -41,7 +41,7 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
 
     @Override
     public boolean isPTRSApplicable(PTRSProblem R) {
-        return R.getVariables().isEmpty() && R.isNonOverlapping() && R.isTailRecursive();
+        return R.isRightGround() && R.isNonOverlapping() && R.isTailRecursive();
     }
 
 
@@ -52,6 +52,14 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
     @Override
     protected Result processPTRSProblem(PTRSProblem R, Abortion aborter) throws AbortionException {
         try {
+            // If problem not ground transform to from right ground to ground problem 
+            R = R.isGround() ? R : applyTgnt(R);
+            assert R.isGround(): "GNT transformation is faulty";
+            // T_GNT may return the empty problem if no LHS from the original rules ever appears in any RHS -> trivially terminating       
+            if (R.getPR().isEmpty()) {
+                return ResultFactory.proved(new ASTDecidableRNTProof("empty", true));
+            }
+
             Set<ProbabilisticRule> remainingRules = new LinkedHashSet<ProbabilisticRule>(R.getPR());
             if (R.isWeaklyNormalizing(remainingRules)) {
                 final List<ProbabilisticRule> indexedRules = new ArrayList<ProbabilisticRule>(R.getPR()); // order rules
@@ -80,20 +88,20 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
                 YNM res = checkConsistencyOfSubmatrices(matrix,names,aborter);
                 switch(res) {
                     case NO -> {
-                        return ResultFactory.disproved(new ASTDecidableGNTProof(printMatrix(matrix),false));
+                        return ResultFactory.disproved(new ASTDecidableRNTProof(printMatrix(matrix),false));
                     }
                     case YES -> {
-                        return ResultFactory.proved(new ASTDecidableGNTProof(printMatrix(matrix),true));
+                        return ResultFactory.proved(new ASTDecidableRNTProof(printMatrix(matrix),true));
                     }
                     case MAYBE -> { // should not happen by decidability
-                        return ResultFactory.unknown(new ASTDecidableGNTProof(printMatrix(matrix),false));
+                        return ResultFactory.unknown(new ASTDecidableRNTProof(printMatrix(matrix),false));
                     }
                 }
                 return null; // unreachable
 
             } else {
                 for (ProbabilisticRule rule : remainingRules) {
-                    return ResultFactory.disproved(new NotASTDecidableGNTProof(rule.getLeft().toString()));
+                    return ResultFactory.disproved(new NotASTDecidableRNTProof(rule.getLeft().toString()));
                 }
                 return null; // unreachable
             }
@@ -101,13 +109,57 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
             // should not happen since processor only applied when ptrs tail-recursive
             return ResultFactory.error(e);
         }
-    }
+    } 
 
 
     // ================================================================================
     // Utility
     // ================================================================================
+    
+    private static Set<TRSTerm> computeILhs(PTRSProblem P) {
+        Set<TRSTerm> iLhs = new LinkedHashSet<>();
+        for (ProbabilisticRule rule : P.getPR()) {
+            for (TRSTerm rhs : rule.getRight().getSupport()) {
+                for (Pair<Position, TRSTerm> sub : rhs.getPositionsWithSubTerms()) {
+                    TRSTerm subterm = sub.y;
+                    for (ProbabilisticRule rule2 : P.getPR()) {
+                        TRSTerm lhs = rule2.getLeft();
+                        // lhs has variables, subterm is ground, match lhs onto subterm
+                        TRSSubstitution sigma = subterm.getMatcher(lhs);
+                        if (sigma != null) {
+                            iLhs.add(subterm);
+                            break; // non-overlapping: at most one rule matches
+                        }
+                    }
+                }
+            }
+        }
+        return iLhs;
+    }
 
+
+    private static PTRSProblem applyTgnt(PTRSProblem P) {
+        Set<TRSTerm> iLhs = computeILhs(P);
+        Set<ProbabilisticRule> newRules = new LinkedHashSet<>();
+        for (TRSTerm inst : iLhs) {
+            for (ProbabilisticRule rule : P.getPR()) {
+                TRSSubstitution sigma = rule.getLeft().getMatcher(inst);
+                if (sigma != null) {
+                    HashMultiSet<Pair<TRSTerm, BigFraction>> newProbMap = new HashMultiSet<>();
+                    for (Entry<Pair<TRSTerm, BigFraction>, Integer> entry : rule.getRight().getProbabilityMapping().entrySet()) {
+                        TRSTerm term = entry.getKey().x;
+                        BigFraction prob = entry.getKey().y;
+                        Integer count = entry.getValue();
+                        newProbMap.put(new Pair<>(term.applySubstitution(sigma), prob), count);
+                    }
+                    MultiDistribution<TRSTerm> instRhs = new MultiDistribution<>(newProbMap);
+                    newRules.add(ProbabilisticRule.create((TRSFunctionApplication) inst, instRhs));
+                    break; // P is non-overlapping, at most one rule matches
+                }
+            }
+        }
+        return new PTRSProblem(newRules, P.getRewriteStrategy(), P.getTarget(), P.isBasic());
+    }
 
     private static YNM checkConsistencyOfMatrix(BigFraction[][] matrix, Map<String,BigFraction> names, Abortion aborter) {
         SimplePolynomial charPolynomial = computeCharacteristicPolynomial(preProc(matrix,names));
@@ -359,12 +411,12 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
     // ================================================================================
 
 
-    private class ASTDecidableGNTProof extends Proof.DefaultProof {
+    private class ASTDecidableRNTProof extends Proof.DefaultProof {
 
         final String matrix;
         final boolean ast;
 
-        public ASTDecidableGNTProof(String s, boolean ast) {
+        public ASTDecidableRNTProof(String s, boolean ast) {
             super();
             this.matrix = s;
             this.ast = ast;
@@ -380,7 +432,7 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
             proof.append(o.export(matrix));
             proof.append(o.newline());
             proof.append(o.export("Now the matrix is split into its connected components (CCs) and for each we determine whether its eigenvalue is <= 1.\n"));
-            proof.append(o.export("(*) The system is ground, non-overlapping and tail-recursive, so it is AST iff the maximum eigenvalue of all CCs is <= 1\n"));
+            proof.append(o.export("(*) The system is right-ground, non-overlapping and tail-recursive, so it is AST iff the maximum eigenvalue of all CCs is <= 1\n"));
             String maybeNot = this.ast? "" : "not ";
             proof.append(o.export("Since " + maybeNot + "all CCs had eigenvalue <= 1, the PTRS is " + maybeNot + "AST.\n"));
             return proof.toString();
@@ -388,11 +440,11 @@ public class PTRS_AST_DecidableGNTProcessor extends PTRS_AST_ProblemProcessor {
     }
 
 
-    private class NotASTDecidableGNTProof extends Proof.DefaultProof {
+    private class NotASTDecidableRNTProof extends Proof.DefaultProof {
 
         String s;
 
-        public NotASTDecidableGNTProof(String s) {
+        public NotASTDecidableRNTProof(String s) {
             super();
             this.s = s;
         }
