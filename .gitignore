@@ -22,3 +22,5 @@ GlobalSettings.java
 /llvmWitness.txt
 /ruleTree.dot
 **/.DS_Store
+**/__pycache__/
+**/*.pyc
