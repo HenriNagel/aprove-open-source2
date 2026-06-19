@@ -313,10 +313,10 @@ def run_file_local(cfg: dict[str, str | Path], file_path: Path, root: Path, outd
                         stdout, stderr = proc.communicate()
                         killed_by_script = True
                         break
-        finally
-              if pgid is not None:
-                  _kill_pgroup(pgid)
-          elapsed_ms = int((time.monotonic() - t_start) * 1000)
+        finally:
+            if pgid is not None:
+                _kill_pgroup(pgid)
+            elapsed_ms = int((time.monotonic() - t_start) * 1000)
         output = stdout or ""
         if killed_by_script:
             if outdir:
