@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
   openjdk-25-jdk \
   git \
   minisat2 \
-  clang \
   unzip \
   mono-runtime \
   xsltproc \
@@ -27,7 +26,10 @@ COPY /bundle /opt/bundle
 WORKDIR /opt/bundle/cpfconverter
 
 ENV PATH="/opt/bundle/cpfconverter:/opt/bundle/irankfinder/1.3.1/irankfinder/partialevaluation/bin:/opt/bundle/irankfinder/1.3.1/irankfinder/ppl:/opt/bundle/irankfinder/1.3.1/irankfinder:/opt/bundle/bin:/usr/bin:${PATH}"
-# ENV LD_LIBRARY_PATH="/opt/bundle/irankfinder/1.3.1/irankfinder/partialevaluation/bin:/opt/bundle/irankfinder/1.3.1/irankfinder/ppl:/opt/bundle/irankfinder/1.3.1/irankfinder:/opt/bundle/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+ENV LD_LIBRARY_PATH="/opt/bundle/c_lib"
+ENV C_INCLUDE_PATH="/opt/bundle/fake_include"
+ENV LOAT_PATH="/opt/bundle/bin"
+ENV KOAT2_PATH="/opt/bundle/bin"
 ENV T2_PATH="/opt/bundle/t2"
 ENV APROVE="/opt/bundle/aprove.jar"
 ENV JAVA_HOME="/usr/lib/jvm/java-25-openjdk-amd64"

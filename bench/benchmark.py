@@ -4,6 +4,7 @@ import csv
 import math
 import os
 import random
+import signal
 import subprocess
 import sys
 import tempfile
@@ -162,6 +163,13 @@ def get_commit_id(image: str, jar_path: Path | None) -> str:
         return "unknown"
 
 
+def _kill_pgroup(pgid: int) -> None:
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
 def _docker_kill(cid_file: Path) -> None:
     """Kill the container whose ID was written to cid_file by docker run --cidfile."""
     try:
@@ -280,6 +288,7 @@ def run_file_local(cfg: dict[str, str | Path], file_path: Path, root: Path, outd
         deadline = t_start + int(cfg["TIMEOUT"]) + KILL_GRACE
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                 env=env, preexec_fn=os.setsid if hasattr(os, "setsid") else None)
+        pgid = os.getpgid(proc.pid) if hasattr(os, "getpgid") else None
         killed_by_script = False
         try:
             while True:
@@ -288,6 +297,8 @@ def run_file_local(cfg: dict[str, str | Path], file_path: Path, root: Path, outd
                     break
                 except subprocess.TimeoutExpired:
                     if STOP_EVENT.is_set():
+                        if pgid is not None:
+                            _kill_pgroup(pgid)
                         proc.kill()
                         try:
                             stdout, stderr = proc.communicate(timeout=2)
@@ -296,13 +307,16 @@ def run_file_local(cfg: dict[str, str | Path], file_path: Path, root: Path, outd
                             stdout, stderr = proc.communicate()
                         return file_path, stdout or "", "cancelled", None
                     if time.monotonic() >= deadline:
+                        if pgid is not None:
+                            _kill_pgroup(pgid)
                         proc.kill()
                         stdout, stderr = proc.communicate()
                         killed_by_script = True
                         break
-        finally:
-            pass
-        elapsed_ms = int((time.monotonic() - t_start) * 1000)
+        finally
+              if pgid is not None:
+                  _kill_pgroup(pgid)
+          elapsed_ms = int((time.monotonic() - t_start) * 1000)
         output = stdout or ""
         if killed_by_script:
             if outdir:

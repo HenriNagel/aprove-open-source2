@@ -9,6 +9,8 @@ CPF_CONVERTER = os.environ.get("CPF_CONVERTER", "/opt/bundle/cpfconverter/cpf2_t
 JAVA = os.environ.get("JAVA", "java")
 JAVA_PLAIN_OPTS: list[str] = os.environ.get("JAVA_PLAIN_OPTS", "-ea").split()
 JAVA_HEAVY_OPTS: list[str] = os.environ.get("JAVA_HEAVY_OPTS", "-Xmx14G -Xms14G -ea").split()
+LOAT_PATH = os.environ.get("LOAT_PATH", "/opt/bundle/bin")
+KOAT2_PATH = os.environ.get("KOAT2_PATH", "/opt/bundle/bin")
 
 
 def mkinput(out: Path, *lines: str, benchmark: Path) -> None:
@@ -29,6 +31,13 @@ def _print_input(path: Path, label: str) -> None:
         print("---END INPUT---", file=sys.stderr)
 
 
+def _solver_env(env: dict[str, str] | None = None) -> dict[str, str]:
+    base = dict(os.environ) if env is None else dict(env)
+    base.setdefault("LOAT_PATH", LOAT_PATH)
+    base.setdefault("KOAT2_PATH", KOAT2_PATH)
+    return base
+
+
 def run_plain(
     input_file: Path,
     *,
@@ -40,7 +49,7 @@ def run_plain(
     opts = JAVA_HEAVY_OPTS if heavy else JAVA_PLAIN_OPTS
     t_args = ["-t", str(timeout)] if timeout is not None else []
     cmd = [JAVA, *opts, "-jar", APROVE, "-m", mode, "-p", "plain", *t_args, str(input_file)]
-    return subprocess.run(cmd, stdout=subprocess.PIPE, text=True, env=env).stdout
+    return subprocess.run(cmd, stdout=subprocess.PIPE, text=True, env=_solver_env(env)).stdout
 
 
 def run_cpf_convert(
@@ -51,7 +60,7 @@ def run_cpf_convert(
 ) -> str:
     t_args = ["-t", str(timeout)] if timeout is not None else []
     cmd = [JAVA, *JAVA_PLAIN_OPTS, "-jar", APROVE, "-m", mode, "-p", "cpf", "-C", "ceta", *t_args, str(input_file)]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, env=_solver_env())
     lines = result.stdout.splitlines(keepends=True)
     if not lines:
         return ""
@@ -86,7 +95,7 @@ def run_complexity(
         if cert:
             result = subprocess.run(
                 [*base_cmd, "-p", "cpf", "-C", "ceta", str(tmp)],
-                stdout=subprocess.PIPE, text=True,
+                stdout=subprocess.PIPE, text=True, env=_solver_env(),
             )
             lines = result.stdout.splitlines(keepends=True)
             if not lines:
@@ -102,5 +111,5 @@ def run_complexity(
                 Path(tmp2).unlink(missing_ok=True)
         return subprocess.run(
             [*base_cmd, "-p", "plain", str(tmp)],
-            stdout=subprocess.PIPE, text=True,
+            stdout=subprocess.PIPE, text=True, env=_solver_env(),
         ).stdout
